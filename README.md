@@ -150,8 +150,8 @@ Contributions are welcome, especially new rules and language support. Check issu
 ```bash
 git clone https://github.com/postmortem/postmortem.git
 cd postmortem
-pip install -e ".[dev]"
-pytest
+make install   # uv sync: venv + Rust build + dev deps
+make test
 ```
 
 ## License
