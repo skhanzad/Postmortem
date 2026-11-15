@@ -2,24 +2,41 @@ from __future__ import annotations
 
 import argparse
 import sys
+import typer
+from typing_extensions import Annotated
+from typing import Optional
 
-from postmortem import __version__
+from postmortem import __version__, core_version
+from typer import Typer
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="postmortem")
-    parser.add_argument("--version", action="version", version=f"postmortem {__version__}")
-    sub = parser.add_subparsers(dest="command")
-    check = sub.add_parser("check", help="check changes for test tampering")
-    check.add_argument("--base", help="base ref to compare against")
-    args = parser.parse_args(argv)
+app = Typer(
+    help="Catch AI coding agents cheating on your tests before you commit.",
+    no_args_is_help=True,
+    add_help_option=True,
 
-    if args.command == "check":
-        print("No checks implemented yet.")
-        return 0
-    parser.print_help()
-    return 0
+)
+
+def version_callback(value: bool):
+    if value:
+        typer.echo(f"postmortem {__version__}\ncore {core_version()}")
+        raise typer.Exit()
+
+@app.callback()
+def main(
+    version: Annotated[
+        Optional[bool],
+        typer.Option("--version", "-V", callback=version_callback, is_eager=True,
+                     help="Show version and exit."),
+    ] = None,
+):
+    pass
+
+@app.command()
+def check() -> None:
+    """Check changes for test tampering."""
+    print("No checks implemented yet.")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(app())
