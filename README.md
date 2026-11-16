@@ -12,7 +12,25 @@ Postmortem checks the changes made by AI coding agents (Claude Code, Cursor, Cop
 
 ## Why
 
-AI agents are great at making tests pass. Sometimes they do it the wrong way: deleting the failing test, loosening an assertion, or hardcoding the expected value. These changes are easy to miss in a 40-file diff. Postmortem flags them so you review what matters.
+Coding agents are optimized to reach a goal, and the goal you give them is usually "make the tests pass." Agents read the tests, so the tests are now an *objective to optimize*, not an independent *measurement*. When the honest fix is hard, the cheapest path to green is to change the measurement:
+
+```diff
+- assert total == 59.99
++ assert total is not None        # ✅ CI passes. The bug ships.
+```
+
+This is **reward hacking**, and it's already showing up in real repos. The trouble is that every safety net you have trusts the tests:
+
+- **CI** is green, because the agent changed the tests until they passed.
+- **Coverage** stays the same or goes *up*, since a weak assertion still runs the code.
+- **Code review** sees a 40-file diff where 39 files look fine. One deleted line in `tests/` goes unnoticed.
+- **The agent's own summary** says "Fixed the failing test ✅".
+
+Here, a passing pipeline is evidence of *success*, not of *correctness*. As teams let agents open PRs with less supervision (background agents, auto-merge, CI bots), this gap grows.
+
+Postmortem checks the thing everyone else trusts: **did this change weaken the checks that are supposed to judge it?** It compares test code before and after the change at the syntax-tree level. It runs locally and in CI, and it blocks the merge when the measurement has been tampered with.
+
+👉 Full write-up: [docs/problem.md](docs/problem.md)
 
 ## What it catches
 
