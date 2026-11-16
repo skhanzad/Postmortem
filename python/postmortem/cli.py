@@ -6,7 +6,7 @@ import typer
 from typing_extensions import Annotated
 from typing import Optional
 
-from postmortem import __version__, core_version
+from postmortem import __version__, core_version, print_history
 from typer import Typer
 
 
@@ -36,6 +36,14 @@ def main(
 def check() -> None:
     """Check changes for test tampering."""
     print("No checks implemented yet.")
+
+
+@app.command()
+def gixh(path: str, limit: int = 10) -> None:
+    """Print the last `limit` commits of the repository at `path`."""
+    res = print_history(path, limit)
+    print("\n".join(res))
+    
 
 
 if __name__ == "__main__":
