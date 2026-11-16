@@ -1,5 +1,13 @@
 use std::error::Error;
 
+// ANSI terminal colors
+const RED: &str = "\x1b[31m";
+const GREEN: &str = "\x1b[32m";
+const CYAN: &str = "\x1b[36m";
+const BOLD: &str = "\x1b[1m";
+const RESET: &str = "\x1b[0m";
+use owo_colors::OwoColorize;
+
 /// Print the last `limit` commits of the repository at `path`.
 pub fn print_history(path: &str, limit: usize) -> Result<Vec<String>, Box<dyn Error>> {
     let repo = gix::discover(path)?;
@@ -37,12 +45,25 @@ pub fn diff(repo: &gix::Repository) -> Result<String, Box<dyn Error>> {
             C::Modification { previous_id, id, .. } => ("M", Some(*previous_id), Some(*id)),
             C::Rewrite { source_id, id, .. } => ("R", Some(*source_id), Some(*id)),
         };
-        out.push_str(&format!("{kind} {}\n", change.location()));
+        out.push_str(&format!("{BOLD}{kind} {}{RESET}\n", change.location()));
 
         let old = blob_text(&repo, old_id)?;
         let new = blob_text(&repo, new_id)?;
         let text_diff = similar::TextDiff::from_lines(&old, &new);
-        out.push_str(&text_diff.unified_diff().context_radius(3).to_string());
+        for hunk in text_diff.unified_diff().context_radius(3).iter_hunks() {
+            out.push_str(&format!("{CYAN}{}{RESET}\n", hunk.header()));
+            for line in hunk.iter_changes() {
+                let (color, sign) = match line.tag() {
+                    similar::ChangeTag::Insert => (GREEN, "+"),
+                    similar::ChangeTag::Delete => (RED, "-"),
+                    similar::ChangeTag::Equal => ("", " "),
+                };
+                out.push_str(&format!("{color}{sign}{line}{RESET}"));
+                if line.missing_newline() {
+                    out.push('\n');
+                }
+            }
+        }
     }
     Ok(out)
 }
